@@ -1,0 +1,8 @@
+For WO0000002713500, Please delete the following namespaces from PD103:
+    dbaas-gcp-mongo-prod
+    firestore-service-tekton
+firestore-tekton
+gcp-bigtable-prod
+mdb-pcf-prod
+mongo-poc
+  2 All resources have been freed. The namespace owner made the request.

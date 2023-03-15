@@ -1,0 +1,82 @@
+[registries.search]
+registries = ["registry.access.redhat.com", "quay.io"]
+
+[registries.insecure]
+registries = ['localhost:5000']
+
+[registries.block]
+registries = ['badhost:5000']
+
+lab image-operations start
+podman login quay.io
+podman run -d \
+    --name official-httpd \
+    -p 8180:80 \
+    quay.io/redhattraining/httpd-parent
+podman exec -it official-httpd /bin/bash
+    echo "DO180" > /var/www/html/do180.html
+    exit
+curl 127.0.0.1:8180/do180.html
+podman diff official-httpd
+podman stop official-httpd
+podman commit -a 'Chris' \
+    official-httpd do180-custom-httpd
+podman images
+source /usr/local/etc/ocp4.config
+podman tag do180-custom-httpd \
+    quay.io/${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+podman images
+podman push \
+    quay.io/${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+podman pull \
+    -q quay.io/${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+podman run -d \
+    --name test-httpd \
+    -p 8280:80 \
+    ${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+curl http://localhost:8280/do180.html
+lab image-operations finish
+
+
+lab image-review start
+podman login quay.io
+podman pull quay.io/redhattraining/nginx:1.17
+podman images
+podman run -d \
+    --name official-nginx \
+    -p 8080:80 \
+    quay.io/redhattraining/nginx:1.17
+podman ps -a
+podman exec -it official-nginx /bin/bash
+    echo "DO180 Page" > /usr/share/nginx/html/index.html
+    exit
+curl http://localhost:8080/index.html
+
+echo "DO180 Page" > /usr/share/nginx/html/index.html
+podman stop official-nginx
+podman commit -a 'Chris' \
+    official-nginx do180/mynginx
+podman tag do180/mynginx \
+    do180/mynginx:v1.0-SNAPSHOT
+podman images
+podman run -d \
+    --name official-nginx-dev \
+    -p 8080:80 \
+    do180/mynginx:v1.0-SNAPSHOT
+podman exec -it official-nginx-dev /bin/bash
+    echo "DO180 Page" > /usr/share/nginx/html/index.html
+    exit
+curl http://localhost:8080/index.html
+podman stop official-nginx-dev
+podman commit -a 'Chris' \
+    official-nginx-dev do180/mynginx
+podman tag do180/mynginx \
+    do180/mynginx:v1.0
+podman rm mynginx:v1.0-SNAPSHOT
+podman rmi do180/mynginx:v1.0-SNAPSHOT
+podman run -d \
+    --name my-nginx \
+    -p 8280:80 \
+    do180/mynginx:v1.0
+curl http://localhost:8280/index.html
+lab image-review finish
